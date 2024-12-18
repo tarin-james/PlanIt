@@ -1,0 +1,55 @@
+@page "/create-event"
+@using PlanIt.Models
+@using PlanIt.Services
+@inject EventService EventService
+@inject NavigationManager Navigation
+
+<h3>Create a New Event</h3>
+
+<EditForm Model="@newEvent" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label for="Title">Event Title</label>
+        <InputText id="Title" @bind-Value="newEvent.Title" />
+    </div>
+    <div>
+        <label for="Location">Location</label>
+        <InputText id="Location" @bind-Value="newEvent.Location" />
+    </div>
+    <div>
+        <label for="Description">Description</label>
+        <InputTextArea id="Description" @bind-Value="newEvent.Description" />
+    </div>
+    <div>
+        <label for="Date">Event Date</label>
+        <InputDate id="Date" @bind-Value="newEvent.Date" />
+    </div>
+    <div>
+        <label for="CreatedBy">Created By</label>
+        <InputText id="CreatedBy" @bind-Value="newEvent.CreatedBy" />
+    </div>
+
+    <button type="submit">Create Event</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p style="color: red;">@errorMessage</p>
+}
+
+@code {
+    private Event newEvent = new Event();
+    private string errorMessage;
+
+    private async Task HandleValidSubmit()
+    {
+        errorMessage = await EventService.AddEventAsync(newEvent);
+        if (string.IsNullOrEmpty(errorMessage))
+        {
+            newEvent = new Event(); // Reset the form
+            Navigation.NavigateTo("/view-events"); // Redirect
+        }
+    }
+}

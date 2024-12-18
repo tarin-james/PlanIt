@@ -1,0 +1,116 @@
+@page "/view-events"
+@using PlanIt.Models
+@using PlanIt.Services
+@inject EventService EventService
+
+<h3>View Events</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p style="color: red;">@errorMessage</p>
+}
+
+@if (events == null)
+{
+    <p>Loading events...</p>
+} 
+else if (!events.Any())
+{
+    <p>No events created yet.</p>
+} 
+else 
+{
+    @if (isEditing)
+    {
+        <EditForm Model="@editEvent" OnValidSubmit="HandleUpdate">
+            <h4>Edit Event</h4>
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <div>
+                <label for="Title">Title</label>
+                <InputText id="Title" @bind-Value="editEvent.Title" disabled />
+            </div>
+            <div>
+                <label for="Location">Location</label>
+                <InputText id="Location" @bind-Value="editEvent.Location" />
+            </div>
+            <div>
+                <label for="Description">Description</label>
+                <InputTextArea id="Description" @bind-Value="editEvent.Description" />
+            </div>
+            <div>
+                <label for="Date">Date</label>
+                <InputDate id="Date" @bind-Value="editEvent.Date" />
+            </div>
+            <button type="submit">Save Changes</button>
+            <button @onclick="CancelEdit">Cancel</button>
+        </EditForm>
+    }
+    else
+    {
+        <ul>
+            @foreach (var eventItem in events)
+            {
+                <li>
+                    <h4>@eventItem.Title - @eventItem.Date.ToString("MM/dd/yyyy")</h4>
+                    <p>Located at - @eventItem.Location</p>
+                    <p>Description - @eventItem.Description</p>
+                    <p>Host - @eventItem.CreatedBy</p>
+                    <button @onclick="() => StartEdit(eventItem)">Edit</button>
+                    <button @onclick="() => DeleteEvent(eventItem.Title)">Delete</button>
+                </li>
+            }
+        </ul>
+    }
+}
+
+@code {
+    private List<Event> events;
+    private Event editEvent = new Event();
+    private string errorMessage;
+    private bool isEditing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await EventService.GetEventsAsync();
+        events = result.Item1;
+        errorMessage = result.Item2;
+    }
+
+    private async Task DeleteEvent(string title)
+    {
+        errorMessage = await EventService.DeleteEventAsync(title);
+        if (string.IsNullOrEmpty(errorMessage))
+        {
+            events = (await EventService.GetEventsAsync()).Item1;
+        }
+    }
+
+    private void StartEdit(Event eventToEdit)
+    {
+        isEditing = true;
+        editEvent = new Event
+        {
+            Title = eventToEdit.Title,
+            Location = eventToEdit.Location,
+            Description = eventToEdit.Description,
+            Date = eventToEdit.Date,
+            CreatedBy = eventToEdit.CreatedBy
+        };
+    }
+
+    private async Task HandleUpdate()
+    {
+        errorMessage = await EventService.UpdateEventAsync(editEvent);
+        if (string.IsNullOrEmpty(errorMessage))
+        {
+            events = (await EventService.GetEventsAsync()).Item1;
+            isEditing = false;
+        }
+    }
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+    }
+}
